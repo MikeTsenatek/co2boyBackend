@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="{{
+  url_for('static', filename='jquery.js') }}">\x3C/script>')
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+  $(document).ready(function(){
+    $("button").click(function(){
+        $.getJSON($SCRIPT_ROOT + '/_add', {
+                id: $("#id").val(),
+                room: $("#room").val()
+            }, function(data) {
+                $("#menu").append('<li>'+data['id']+': '+data['room']+'<a at="'+data['id']+'" class="delete" href="#">Delete</a></li>');
+                $("#id").val('');
+                $("#room").val('');
+           });
+    });
+    $('#menu').on('click', 'a.delete', function(){
+        $.getJSON($SCRIPT_ROOT + '/_del', {
+            id: $(this).attr("at"),
+        }, (data) =>  {
+            $(this).parent().remove();
+       });
+    });
+});
+</script>
+<body>
+<ul id="menu">
+{% for i in result.keys() %}
+    <li>{{i}}: {{result[i]}}<a at="{{i}}" class="delete" href="#">Delete</a></li>
+    {%endfor%}
+</ul>
+<input id="id"><input id="room">
+<button type="button">Add</button>
+</body>
+</html>

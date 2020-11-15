@@ -1,0 +1,89 @@
+version: "3.6"
+services:
+        config:
+                build:
+                        context: ./zuordnung
+                        dockerfile: Dockerfile
+                container_name: config
+                restart: always
+                ports:
+                        - 5000:5000
+                networks:
+                        - monitoring
+                volumes:
+                        - zuordnung-volume:/code/src/zuordnung.yaml
+        grafana:
+                image: grafana/grafana
+                container_name: grafana
+                restart: always
+                ports:
+                        - 3000:3000
+                networks:
+                        - monitoring
+                volumes:
+                        - grafana-volume:/vol01/Docker/monitoring
+                        - ./grafana/provisioning:/etc/grafana/provisioning
+                        - ./grafana/dashboards:/etc/grafana/dashboards
+                        - /etc/localtime:/etc/localtime:ro
+                        - /etc/timezone:/etc/timezone:ro
+                environment:
+                        - GF_INSTALL_PLUGINS=larona-epict-panel,grafana-piechart-panel,grafana-clock-panel
+        influxdb:
+                image: influxdb
+                container_name: influxdb
+                restart: always
+                ports:
+                        - 8086:8086
+                networks:
+                        - monitoring
+                volumes:
+                        - influxdb-volume:/vol01/Docker/monitoring
+                        - /etc/localtime:/etc/localtime:ro
+                        - /etc/timezone:/etc/timezone:ro
+                environment:
+                        - INFLUXDB_DB=telegraf
+                        - INFLUXDB_USER=telegraf
+                        - INFLUXDB_ADMIN_ENABLED=true
+                        - INFLUXDB_ADMIN_USER=admin
+                        - INFLUXDB_ADMIN_PASSWORD=Welcome123
+        telegraf:
+                image: telegraf
+                container_name: telegraf
+                restart: always
+                depends_on:
+                        - "mqtt"
+                        - "influxdb"
+                networks:
+                        - monitoring
+                environment:
+                        HOST_PROC: /rootfs/proc
+                        HOST_SYS: /rootfs/sys
+                        HOST_ETC: /rootfs/etc
+                volumes:
+                        - /etc/localtime:/etc/localtime:ro
+                        - /etc/timezone:/etc/timezone:ro
+                        - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+                        - /var/run/docker.sock:/var/run/docker.sock:ro
+                        - /sys:/rootfs/sys:ro
+                        - /proc:/rootfs/proc:ro
+                        - /etc:/rootfs/etc:ro
+        mqtt:
+                image: eclipse-mosquitto
+                container_name: mqtt
+                restart: always
+                ports: 
+                        - 1883:1883
+                networks:
+                        - monitoring
+                volumes:
+                        - /etc/localtime:/etc/localtime:ro
+                        - /etc/timezone:/etc/timezone:ro
+                        - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+                        - mosquitto-volume:/mosquitto
+networks:
+        monitoring:
+volumes:
+        grafana-volume:
+        influxdb-volume:
+        mosquitto-volume:
+        zuordnung-volume:
